@@ -12,6 +12,13 @@ create table public.groups (
   created_at timestamptz not null default now()
 );
 
+create table public.group_laws (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups (id) on delete cascade,
+  body text not null check (char_length(trim(body)) between 1 and 1000),
+  created_at timestamptz not null default now()
+);
+
 create table public.members (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references public.groups (id) on delete cascade,
@@ -95,6 +102,7 @@ create table public.activity_logs (
 );
 
 create index members_group_idx on public.members (group_id, is_active, full_name);
+create index group_laws_group_idx on public.group_laws (group_id, created_at);
 create index contributions_group_idx on public.contributions (group_id, paid_on);
 create index contributions_member_idx on public.contributions (member_id);
 create index loans_group_idx on public.loans (group_id, status);
@@ -283,6 +291,66 @@ begin
   if cleaned is null or char_length(cleaned) > 80 then raise exception 'bad_name'; end if;
   update public.groups set name = cleaned where id = gid;
   perform public.write_activity(gid, 'group.renamed', 'group', gid, replace(cleaned, '|', '/'));
+end;
+$$;
+
+create or replace function public.add_law(p_body text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  gid uuid;
+  cleaned text;
+  lid uuid;
+begin
+  gid := public.current_group_id();
+  if gid is null then raise exception 'no_group'; end if;
+  cleaned := nullif(trim(coalesce(p_body, '')), '');
+  if cleaned is null or char_length(cleaned) > 1000 then raise exception 'bad_law'; end if;
+  insert into public.group_laws (group_id, body) values (gid, cleaned) returning id into lid;
+  perform public.write_activity(gid, 'law.added', 'group_law', lid, replace(cleaned, '|', '/'));
+  return lid;
+end;
+$$;
+
+create or replace function public.update_law(p_law_id uuid, p_body text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  gid uuid;
+  cleaned text;
+begin
+  gid := public.current_group_id();
+  if gid is null then raise exception 'no_group'; end if;
+  cleaned := nullif(trim(coalesce(p_body, '')), '');
+  if cleaned is null or char_length(cleaned) > 1000 then raise exception 'bad_law'; end if;
+  update public.group_laws set body = cleaned where id = p_law_id and group_id = gid;
+  if not found then raise exception 'law_not_found'; end if;
+  perform public.write_activity(gid, 'law.updated', 'group_law', p_law_id, replace(cleaned, '|', '/'));
+end;
+$$;
+
+create or replace function public.delete_law(p_law_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  gid uuid;
+  old_body text;
+begin
+  gid := public.current_group_id();
+  if gid is null then raise exception 'no_group'; end if;
+  select body into old_body from public.group_laws where id = p_law_id and group_id = gid;
+  if old_body is null then raise exception 'law_not_found'; end if;
+  delete from public.group_laws where id = p_law_id and group_id = gid;
+  perform public.write_activity(gid, 'law.deleted', 'group_law', p_law_id, replace(old_body, '|', '/'));
 end;
 $$;
 
@@ -777,6 +845,7 @@ alter table public.repayments enable row level security;
 alter table public.fines enable row level security;
 alter table public.transactions enable row level security;
 alter table public.activity_logs enable row level security;
+alter table public.group_laws enable row level security;
 
 create policy groups_select on public.groups
   for select to authenticated
@@ -810,9 +879,13 @@ create policy activity_select on public.activity_logs
   for select to authenticated
   using (group_id = public.current_group_id());
 
+create policy group_laws_select on public.group_laws
+  for select to authenticated
+  using (group_id = public.current_group_id());
+
 revoke all on all tables in schema public from anon, authenticated;
 grant select on public.groups, public.members, public.contributions, public.loans,
-  public.repayments, public.fines, public.transactions, public.activity_logs
+  public.repayments, public.fines, public.transactions, public.activity_logs, public.group_laws
   to authenticated;
 
 revoke all on function public.current_group_id() from public, anon;
@@ -835,6 +908,9 @@ revoke all on function public.add_fine(uuid, bigint, text, date) from public, an
 revoke all on function public.shareout_preview() from public, anon;
 revoke all on function public.confirm_shareout() from public, anon;
 revoke all on function public.group_snapshot(date) from public, anon;
+revoke all on function public.add_law(text) from public, anon;
+revoke all on function public.update_law(uuid, text) from public, anon;
+revoke all on function public.delete_law(uuid) from public, anon;
 
 grant execute on function public.rename_group(text) to authenticated;
 grant execute on function public.add_member(text, text) to authenticated;
@@ -846,3 +922,6 @@ grant execute on function public.add_fine(uuid, bigint, text, date) to authentic
 grant execute on function public.shareout_preview() to authenticated;
 grant execute on function public.confirm_shareout() to authenticated;
 grant execute on function public.group_snapshot(date) to authenticated;
+grant execute on function public.add_law(text) to authenticated;
+grant execute on function public.update_law(uuid, text) to authenticated;
+grant execute on function public.delete_law(uuid) to authenticated;

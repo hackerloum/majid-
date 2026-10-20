@@ -74,6 +74,16 @@ export function IconActivity(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function IconAdmin(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="8" r="3" />
+      <path d="M5 20c1.4-3 4-4.5 7-4.5S17.6 17 19 20" />
+      <path d="M19 4v4M17 6h4" />
+    </Icon>
+  );
+}
+
 export function IconSettings(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

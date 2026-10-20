@@ -4,8 +4,8 @@ import {
   IconCoin,
   IconFine,
   IconLoan,
+  IconAdmin,
   IconReport,
-  IconSettings,
   IconShare,
   IconUsers,
 } from "@/components/icons";
@@ -24,7 +24,7 @@ const links: { href: string; key: CopyKey; icon: typeof IconUsers }[] = [
   { href: "/shareout", key: "shareout", icon: IconShare },
   { href: "/reports", key: "reports", icon: IconReport },
   { href: "/activity", key: "activity", icon: IconActivity },
-  { href: "/settings", key: "settings", icon: IconSettings },
+  { href: "/admin", key: "admin", icon: IconAdmin },
 ];
 
 function Stat({ label, value, lang }: { label: string; value: number; lang: Lang }) {

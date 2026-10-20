@@ -26,5 +26,5 @@ export async function requireGroup() {
   if (!user) redirect("/login");
 
   const { data: group } = await supabase.from("groups").select("id, name").maybeSingle();
-  return { configured: true as const, supabase, group };
+  return { configured: true as const, supabase, group, email: user.email ?? "" };
 }

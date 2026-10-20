@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { addFine, addMember, confirmShareout, giveLoan, logout, recordContribution, recordRepayment, renameGroup, updateMember } from "@/lib/actions";
+import { addFine, addLaw, addMember, confirmShareout, deleteLaw, giveLoan, logout, recordContribution, recordRepayment, renameGroup, updateLaw, updateMember } from "@/lib/actions";
 import { t } from "@/lib/i18n";
 import { formatTzs, interestDue } from "@/lib/money";
-import type { Lang, Member } from "@/lib/types";
+import type { GroupLaw, Lang, Member } from "@/lib/types";
 import { SubmitButton } from "@/components/submit-button";
-import { Card, Field, FormError, SelectField } from "@/components/ui";
+import { Card, Field, FormError, SelectField, TextArea } from "@/components/ui";
 
 function memberChoices(members: Member[], activeOnly: boolean) {
   return members
@@ -227,6 +227,58 @@ export function ShareoutForm({ lang }: { lang: Lang }) {
       {state?.ok ? <p className="text-sm font-semibold text-green">{t(lang, "save")}</p> : null}
       <SubmitButton label={t(lang, "confirmShareout")} pendingLabel={t(lang, "pleaseWait")} disabled={!ready} />
     </form>
+  );
+}
+
+export function AddLawForm({ lang }: { lang: Lang }) {
+  const [state, action] = useActionState(addLaw, null);
+  return (
+    <Card>
+      <h3 className="mb-3 text-lg font-bold">{t(lang, "addLaw")}</h3>
+      <form action={action} className="grid gap-3">
+        <TextArea label={t(lang, "lawBody")} name="body" required />
+        <FormError lang={lang} code={state?.ok === false ? state.error : undefined} />
+        <SubmitButton label={t(lang, "add")} pendingLabel={t(lang, "pleaseWait")} />
+      </form>
+    </Card>
+  );
+}
+
+export function LawEditor({ lang, law, index }: { lang: Lang; law: GroupLaw; index: number }) {
+  const [open, setOpen] = useState(false);
+  const [state, action] = useActionState(updateLaw, null);
+  const [deleteState, deleteAction] = useActionState(deleteLaw, null);
+  return (
+    <Card>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-base leading-6">
+          <span className="font-bold text-green">{index}. </span>
+          {law.body}
+        </p>
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="min-h-11 shrink-0 rounded-2xl border border-line px-3 text-sm font-semibold"
+        >
+          {open ? t(lang, "close") : t(lang, "edit")}
+        </button>
+      </div>
+      {open ? (
+        <form action={action} className="mt-4 grid gap-3">
+          <input type="hidden" name="id" value={law.id} />
+          <TextArea label={t(lang, "lawBody")} name="body" required defaultValue={law.body} />
+          <FormError lang={lang} code={state?.ok === false ? state.error : undefined} />
+          <SubmitButton label={t(lang, "save")} pendingLabel={t(lang, "pleaseWait")} />
+        </form>
+      ) : null}
+      <form action={deleteAction} className="mt-3">
+        <input type="hidden" name="id" value={law.id} />
+        <FormError lang={lang} code={deleteState?.ok === false ? deleteState.error : undefined} />
+        <button type="submit" className="min-h-11 text-sm font-semibold text-clay">
+          {t(lang, "deleteLaw")}
+        </button>
+      </form>
+    </Card>
   );
 }
 

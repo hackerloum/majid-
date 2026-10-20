@@ -54,6 +54,19 @@ const sw = {
   reports: "Ripoti",
   activity: "Shughuli",
   settings: "Mipangilio",
+  admin: "Msimamizi",
+  adminLead: "Hapa mwenyekiti au mhazini anasimamia jina la kikundi na sheria zake.",
+  adminAccount: "Akaunti ya msimamizi",
+  laws: "Sheria za kikundi",
+  lawsLead: "Andika sheria moja moja, kwa mfano faini ya kuchelewa au siku ya mkutano.",
+  addLaw: "Ongeza sheria",
+  lawBody: "Sheria",
+  deleteLaw: "Futa sheria",
+  err_bad_law: "Andika sheria (herufi 1 hadi 1000).",
+  err_law_not_found: "Sheria hiyo haipo.",
+  logLawAdded: "Sheria imeongezwa: {law}",
+  logLawUpdated: "Sheria imebadilishwa: {law}",
+  logLawDeleted: "Sheria imefutwa: {law}",
   activeMembers: "Wanachama hai",
   totalContributions: "Jumla ya michango",
   loanBalance: "Salio la mikopo",
@@ -192,6 +205,19 @@ const en: typeof sw = {
   reports: "Reports",
   activity: "Activity",
   settings: "Settings",
+  admin: "Admin",
+  adminLead: "Here the chair or treasurer manages the group name and its laws.",
+  adminAccount: "Admin account",
+  laws: "Group laws",
+  lawsLead: "Write one law at a time, for example a late fine or the meeting day.",
+  addLaw: "Add a law",
+  lawBody: "Law",
+  deleteLaw: "Delete law",
+  err_bad_law: "Write a law (1 to 1000 characters).",
+  err_law_not_found: "That law was not found.",
+  logLawAdded: "Law added: {law}",
+  logLawUpdated: "Law changed: {law}",
+  logLawDeleted: "Law deleted: {law}",
   activeMembers: "Active members",
   totalContributions: "Total contributions",
   loanBalance: "Loans still owed",
@@ -338,5 +364,8 @@ export function activityLine(lang: Lang, action: string, summary: string): strin
   if (action === "shareout.confirmed") {
     return fill(t(lang, "logShareout"), { amount: formatTzs(first, lang), count: second });
   }
+  if (action === "law.added") return fill(t(lang, "logLawAdded"), { law: first });
+  if (action === "law.updated") return fill(t(lang, "logLawUpdated"), { law: first });
+  if (action === "law.deleted") return fill(t(lang, "logLawDeleted"), { law: first });
   return summary;
 }

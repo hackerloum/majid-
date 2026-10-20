@@ -3,6 +3,7 @@ import type {
   ActivityRow,
   ContributionRow,
   FineRow,
+  GroupLaw,
   LoanRow,
   Member,
   SharePreview,
@@ -53,6 +54,14 @@ export async function getSnapshot(supabase: SupabaseClient, monthStart: string):
     interest_collected: numberField(row.interest_collected),
     unpaid: Array.isArray(row.unpaid) ? row.unpaid : [],
   };
+}
+
+export async function getLaws(supabase: SupabaseClient): Promise<GroupLaw[]> {
+  const { data } = await supabase
+    .from("group_laws")
+    .select("id, body, created_at")
+    .order("created_at", { ascending: true });
+  return data ?? [];
 }
 
 export async function getMembers(supabase: SupabaseClient): Promise<Member[]> {

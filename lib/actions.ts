@@ -19,6 +19,8 @@ const codes = [
   "overpay",
   "nothing_to_share",
   "reason_required",
+  "bad_law",
+  "law_not_found",
   "no_group",
   "not_authenticated",
   "missing_supabase_env",
@@ -70,7 +72,9 @@ function day(formData: FormData, key: string): string | null {
 }
 
 function refresh(paths: string[]) {
-  for (const path of new Set([...paths, "/", "/activity", "/reports"])) revalidatePath(path);
+  for (const path of new Set([...paths, "/", "/home", "/activity", "/reports", "/admin"])) {
+    revalidatePath(path);
+  }
 }
 
 export async function login(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -129,7 +133,7 @@ export async function renameGroup(_prev: ActionResult | null, formData: FormData
   if (!ready.ok) return fail(ready.error);
   const { error } = await ready.supabase.rpc("rename_group", { p_name: text(formData, "name") });
   if (error) return fail(codeFrom(error.message));
-  refresh(["/", "/settings", "/reports"]);
+  refresh(["/settings", "/admin"]);
   return { ok: true };
 }
 
@@ -251,5 +255,35 @@ export async function confirmShareout(
   const { error } = await ready.supabase.rpc("confirm_shareout");
   if (error) return fail(codeFrom(error.message));
   refresh(["/shareout", "/", "/reports", "/activity"]);
+  return { ok: true };
+}
+
+export async function addLaw(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const ready = await client();
+  if (!ready.ok) return fail(ready.error);
+  const { error } = await ready.supabase.rpc("add_law", { p_body: text(formData, "body") });
+  if (error) return fail(codeFrom(error.message));
+  refresh(["/admin"]);
+  return { ok: true };
+}
+
+export async function updateLaw(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const ready = await client();
+  if (!ready.ok) return fail(ready.error);
+  const { error } = await ready.supabase.rpc("update_law", {
+    p_law_id: text(formData, "id"),
+    p_body: text(formData, "body"),
+  });
+  if (error) return fail(codeFrom(error.message));
+  refresh(["/admin"]);
+  return { ok: true };
+}
+
+export async function deleteLaw(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const ready = await client();
+  if (!ready.ok) return fail(ready.error);
+  const { error } = await ready.supabase.rpc("delete_law", { p_law_id: text(formData, "id") });
+  if (error) return fail(codeFrom(error.message));
+  refresh(["/admin"]);
   return { ok: true };
 }

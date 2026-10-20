@@ -74,6 +74,31 @@ export function Field({
   );
 }
 
+export function TextArea({
+  label,
+  name,
+  required,
+  defaultValue,
+}: {
+  label: string;
+  name: string;
+  required?: boolean;
+  defaultValue?: string;
+}) {
+  return (
+    <label className="grid gap-1 text-sm font-semibold">
+      <span>{label}</span>
+      <textarea
+        className={`${fieldClass} min-h-28 py-3`}
+        name={name}
+        required={required}
+        defaultValue={defaultValue}
+        rows={4}
+      />
+    </label>
+  );
+}
+
 export function SelectField({
   label,
   name,

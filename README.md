@@ -16,7 +16,9 @@ SMS, USSD, and offline mode are not part of this version.
 3. Turn **Confirm email** off. If it stays on, a new user cannot enter the app until they open the email link.
 4. Open **SQL Editor**, paste the whole file `supabase/schema.sql`, and run it once.
 
-That file creates `groups`, `members`, `contributions`, `loans`, `repayments`, `fines`, `transactions`, and `activity_logs`. It also turns on Row Level Security and the functions that record money.
+That file creates `groups`, `group_laws`, `members`, `contributions`, `loans`, `repayments`, `fines`, `transactions`, and `activity_logs`. It also turns on Row Level Security and the functions that record money.
+
+If the app was already set up, run `supabase/group_laws.sql` once so the **Msimamizi** page can save group laws.
 
 Signing up creates the group automatically from the group name on the form.
 

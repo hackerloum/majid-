@@ -2,6 +2,12 @@ export type Lang = "sw" | "en";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
+export type GroupLaw = {
+  id: string;
+  body: string;
+  created_at: string;
+};
+
 export type Member = {
   id: string;
   full_name: string;
