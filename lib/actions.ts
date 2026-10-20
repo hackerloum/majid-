@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { publicOrigin } from "@/lib/origin";
 import type { ActionResult, Lang } from "@/lib/types";
 import { createClient, supabaseConfigured } from "@/lib/supabase/server";
 
@@ -91,10 +92,14 @@ export async function signup(_prev: ActionResult | null, formData: FormData): Pr
   if (password.length < 6) return fail("short_password");
 
   const supabase = await createClient();
+  const origin = await publicOrigin();
   const { data, error } = await supabase.auth.signUp({
     email: text(formData, "email"),
     password,
-    options: { data: { group_name: groupName } },
+    options: {
+      data: { group_name: groupName },
+      emailRedirectTo: `${origin}/auth/callback`,
+    },
   });
   if (error) return fail("auth");
   if (!data.session) return fail("confirm_email");
@@ -107,6 +112,7 @@ export async function setLanguage(lang: Lang) {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
   });
 }
 

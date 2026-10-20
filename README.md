@@ -65,6 +65,31 @@ The **SW / EN** button in the header switches language and remembers the choice 
 - The share-out page warns when loans are still active. It does not block the payout.
 - **Chapisha / Pakua PDF** opens the browser print dialog. Choose **Save as PDF** there.
 
+## 4. Host on Vercel
+
+The GitHub repo is https://github.com/hackerloum/majid-
+
+1. Open [vercel.com/new](https://vercel.com/new) and import that repository.
+2. Framework stays **Next.js**. Root directory stays `.`
+3. Add these Environment Variables for **Production**, **Preview**, and **Development**:
+
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+   Use the same values as `.env.local`. Use the publishable / anon key, not the secret key.
+4. Deploy. Copy the production URL, for example `https://majid.vercel.app`.
+5. In Supabase, open **Authentication → URL Configuration** and set:
+
+   - **Site URL** to the Vercel production URL
+   - **Redirect URLs** to:
+     - `https://YOUR-APP.vercel.app/auth/callback`
+     - `https://YOUR-APP.vercel.app/**`
+     - `http://localhost:3000/auth/callback`
+
+Keep **Confirm email** off unless you want people to open a mail link before they can enter.
+
+Every later push to `main` will rebuild production. Pull requests get preview URLs.
+
 ## Scripts
 
 ```bash
@@ -72,3 +97,4 @@ npm run dev
 npm run lint
 npm run build
 ```
+
