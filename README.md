@@ -18,7 +18,12 @@ SMS, USSD, and offline mode are not part of this version.
 
 That file creates `groups`, `group_laws`, `members`, `contributions`, `loans`, `repayments`, `fines`, `transactions`, and `activity_logs`. It also turns on Row Level Security and the functions that record money.
 
-If the app was already set up, run `supabase/group_laws.sql` once so the **Msimamizi** page can save group laws.
+If the app was already set up, run these once in the SQL editor:
+
+- `supabase/group_laws.sql` — group laws
+- `supabase/member_logins.sql` — member logins and the group invite code
+
+The treasurer account is the admin. Members join with the group code from **Msimamizi**, then see only their own records.
 
 Signing up creates the group automatically from the group name on the form.
 

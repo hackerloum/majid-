@@ -25,6 +25,12 @@ export default async function LoginPage() {
           {t(lang, "signup")}
         </Link>
       </p>
+      <p className="mt-3 text-sm">
+        {t(lang, "landingJoin")}?{" "}
+        <Link href="/join" className="font-bold text-green">
+          {t(lang, "joinTitle")}
+        </Link>
+      </p>
     </main>
   );
 }

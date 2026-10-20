@@ -7,7 +7,7 @@ import { getLang, getOptionalUser } from "@/lib/session";
 
 export default async function LandingPage() {
   const user = await getOptionalUser();
-  if (user) redirect("/home");
+  if (user) redirect(user.user_metadata?.role === "member" ? "/member" : "/home");
 
   const lang = await getLang();
   const features = [
@@ -40,6 +40,12 @@ export default async function LandingPage() {
           className="inline-flex min-h-14 items-center justify-center rounded-2xl border border-line bg-card px-4 text-lg font-bold"
         >
           {t(lang, "landingLogin")}
+        </Link>
+        <Link
+          href="/join"
+          className="inline-flex min-h-14 items-center justify-center rounded-2xl border border-line bg-card px-4 text-lg font-bold"
+        >
+          {t(lang, "landingJoin")}
         </Link>
       </div>
 

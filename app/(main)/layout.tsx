@@ -8,16 +8,13 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   const lang = await getLang();
   const session = await requireGroup();
 
-  if (!session.configured || !session.group) {
+  if (!session.configured) {
     return (
       <main className="mx-auto w-full max-w-lg px-4 py-8">
         <div className="mb-6 flex justify-end">
           <LanguageToggle lang={lang} />
         </div>
         <SetupNotice lang={lang} />
-        {session.configured && !session.group ? (
-          <p className="mt-3 text-sm text-muted">{t(lang, "err_no_group")}</p>
-        ) : null}
       </main>
     );
   }

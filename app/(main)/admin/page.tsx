@@ -20,6 +20,11 @@ export default async function AdminPage() {
         <p className="text-sm text-muted">{t(lang, "adminAccount")}</p>
         <p className="mt-1 break-all font-bold">{session.email}</p>
       </Card>
+      <Card>
+        <p className="text-sm text-muted">{t(lang, "inviteCode")}</p>
+        <p className="mt-1 text-3xl font-bold tracking-widest">{session.group.invite_code}</p>
+        <p className="mt-2 text-sm leading-6 text-muted">{t(lang, "inviteHelp")}</p>
+      </Card>
       <RenameForm lang={lang} name={session.group.name} />
       <div className="mt-2">
         <h2 className="mb-2 text-xl font-bold">{t(lang, "laws")}</h2>

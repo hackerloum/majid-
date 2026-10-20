@@ -73,6 +73,20 @@ export async function getMembers(supabase: SupabaseClient): Promise<Member[]> {
   return data ?? [];
 }
 
+export async function getMyContributions(supabase: SupabaseClient): Promise<ContributionRow[]> {
+  const { data } = await supabase
+    .from("contributions")
+    .select("id, amount, paid_on, note, members(full_name)")
+    .order("paid_on", { ascending: false });
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    amount: row.amount,
+    paid_on: row.paid_on,
+    note: row.note,
+    member_name: memberName(row.members as NameRelation),
+  }));
+}
+
 export async function getContributions(
   supabase: SupabaseClient,
   start: string,

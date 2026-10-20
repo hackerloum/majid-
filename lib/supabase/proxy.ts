@@ -28,7 +28,13 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname;
   const isPublic =
-    path === "/" || path === "/login" || path === "/signup" || path.startsWith("/auth/callback");
+    path === "/" ||
+    path === "/login" ||
+    path === "/signup" ||
+    path === "/join" ||
+    path.startsWith("/auth/callback");
+  const isMember = user?.user_metadata?.role === "member";
+  const home = isMember ? "/member" : "/home";
 
   if (!user && !isPublic) {
     const redirectUrl = request.nextUrl.clone();
@@ -36,7 +42,19 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && (path === "/login" || path === "/signup" || path === "/")) {
+  if (user && (path === "/login" || path === "/signup" || path === "/join" || path === "/")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = home;
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (user && isMember && !path.startsWith("/member") && !path.startsWith("/auth/callback")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/member";
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (user && !isMember && path.startsWith("/member")) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/home";
     return NextResponse.redirect(redirectUrl);

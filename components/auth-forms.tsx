@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { login, signup } from "@/lib/actions";
+import { joinGroup, login, signup } from "@/lib/actions";
 import { t } from "@/lib/i18n";
 import type { Lang } from "@/lib/types";
 import { SubmitButton } from "@/components/submit-button";
@@ -28,6 +28,20 @@ export function SignupForm({ lang }: { lang: Lang }) {
       <Field label={t(lang, "password")} name="password" type="password" required min="6" />
       <FormError lang={lang} code={state?.ok === false ? state.error : undefined} />
       <SubmitButton label={t(lang, "signup")} pendingLabel={t(lang, "pleaseWait")} />
+    </form>
+  );
+}
+
+export function JoinForm({ lang }: { lang: Lang }) {
+  const [state, action] = useActionState(joinGroup, null);
+  return (
+    <form action={action} className="grid gap-3">
+      <Field label={t(lang, "inviteCode")} name="invite_code" required />
+      <Field label={t(lang, "name")} name="full_name" required />
+      <Field label={t(lang, "email")} name="email" type="email" required />
+      <Field label={t(lang, "password")} name="password" type="password" required min="6" />
+      <FormError lang={lang} code={state?.ok === false ? state.error : undefined} />
+      <SubmitButton label={t(lang, "landingJoin")} pendingLabel={t(lang, "pleaseWait")} />
     </form>
   );
 }

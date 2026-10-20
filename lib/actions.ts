@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { publicOrigin } from "@/lib/origin";
+import { afterAuthPath } from "@/lib/session";
 import type { ActionResult, Lang } from "@/lib/types";
 import { createClient, supabaseConfigured } from "@/lib/supabase/server";
 
@@ -22,6 +23,8 @@ const codes = [
   "bad_law",
   "law_not_found",
   "no_group",
+  "not_admin",
+  "bad_invite",
   "not_authenticated",
   "missing_supabase_env",
 ];
@@ -85,7 +88,7 @@ export async function login(_prev: ActionResult | null, formData: FormData): Pro
     password: text(formData, "password"),
   });
   if (error) return fail("auth");
-  redirect("/home");
+  redirect(await afterAuthPath(supabase));
 }
 
 export async function signup(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -101,13 +104,41 @@ export async function signup(_prev: ActionResult | null, formData: FormData): Pr
     email: text(formData, "email"),
     password,
     options: {
-      data: { group_name: groupName },
+      data: { role: "admin", group_name: groupName },
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });
   if (error) return fail("auth");
   if (!data.session) return fail("confirm_email");
   redirect("/home");
+}
+
+export async function joinGroup(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  if (!supabaseConfigured()) return fail("missing_supabase_env");
+  const fullName = text(formData, "full_name");
+  const inviteCode = text(formData, "invite_code").toUpperCase();
+  const password = text(formData, "password");
+  if (!fullName) return fail("bad_name");
+  if (!inviteCode) return fail("bad_invite");
+  if (password.length < 6) return fail("short_password");
+
+  const supabase = await createClient();
+  const origin = await publicOrigin();
+  const { data, error } = await supabase.auth.signUp({
+    email: text(formData, "email"),
+    password,
+    options: {
+      data: { role: "member", invite_code: inviteCode, full_name: fullName },
+      emailRedirectTo: `${origin}/auth/callback?next=/member`,
+    },
+  });
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("invite") || message.includes("bad_invite")) return fail("bad_invite");
+    return fail("auth");
+  }
+  if (!data.session) return fail("confirm_email");
+  redirect("/member");
 }
 
 export async function setLanguage(lang: Lang) {
@@ -125,7 +156,7 @@ export async function logout() {
     const supabase = await createClient();
     await supabase.auth.signOut();
   }
-  redirect("/login");
+  redirect("/");
 }
 
 export async function renameGroup(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

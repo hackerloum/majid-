@@ -9,6 +9,7 @@ create table public.groups (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null unique references auth.users (id) on delete cascade,
   name text not null check (char_length(trim(name)) between 1 and 80),
+  invite_code text not null unique default upper(substr(md5(random()::text), 1, 8)),
   created_at timestamptz not null default now()
 );
 
@@ -22,6 +23,7 @@ create table public.group_laws (
 create table public.members (
   id uuid primary key default gen_random_uuid(),
   group_id uuid not null references public.groups (id) on delete cascade,
+  user_id uuid unique references auth.users (id) on delete set null,
   full_name text not null check (char_length(trim(full_name)) between 1 and 120),
   phone text,
   is_active boolean not null default true,
@@ -180,7 +182,36 @@ stable
 security definer
 set search_path = public
 as $$
-  select id from public.groups where owner_id = auth.uid()
+  select coalesce(
+    (select id from public.groups where owner_id = auth.uid()),
+    (select group_id from public.members where user_id = auth.uid() limit 1)
+  )
+$$;
+
+create or replace function public.require_admin()
+returns uuid
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  gid uuid;
+begin
+  select id into gid from public.groups where owner_id = auth.uid();
+  if gid is null then raise exception 'not_admin'; end if;
+  return gid;
+end;
+$$;
+
+create or replace function public.current_member_id()
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select id from public.members where user_id = auth.uid() limit 1
 $$;
 
 create or replace function public.write_activity(
@@ -250,6 +281,41 @@ as $$
   where parts.created_at > p_since
 $$;
 
+create or replace function public.link_member_account(p_user uuid, p_code text, p_name text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  gid uuid;
+  cleaned text;
+  existing uuid;
+begin
+  cleaned := nullif(trim(coalesce(p_name, '')), '');
+  if cleaned is null or char_length(cleaned) > 120 then raise exception 'bad_name'; end if;
+  select id into gid
+  from public.groups
+  where invite_code = upper(trim(coalesce(p_code, '')));
+  if gid is null then raise exception 'bad_invite'; end if;
+
+  select id into existing
+  from public.members
+  where group_id = gid
+    and user_id is null
+    and lower(full_name) = lower(cleaned)
+  order by created_at
+  limit 1;
+
+  if existing is not null then
+    update public.members set user_id = p_user, is_active = true where id = existing;
+  else
+    insert into public.members (group_id, user_id, full_name)
+    values (gid, p_user, cleaned);
+  end if;
+end;
+$$;
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -258,7 +324,17 @@ set search_path = public
 as $$
 declare
   gname text;
+  role text;
 begin
+  role := coalesce(new.raw_user_meta_data ->> 'role', 'admin');
+  if role = 'member' then
+    perform public.link_member_account(
+      new.id,
+      new.raw_user_meta_data ->> 'invite_code',
+      new.raw_user_meta_data ->> 'full_name'
+    );
+    return new;
+  end if;
   gname := nullif(trim(coalesce(new.raw_user_meta_data ->> 'group_name', '')), '');
   if gname is null then
     gname := 'Kikundi changu';
@@ -285,8 +361,7 @@ declare
   gid uuid;
   cleaned text;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   cleaned := nullif(trim(coalesce(p_name, '')), '');
   if cleaned is null or char_length(cleaned) > 80 then raise exception 'bad_name'; end if;
   update public.groups set name = cleaned where id = gid;
@@ -305,8 +380,7 @@ declare
   cleaned text;
   lid uuid;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   cleaned := nullif(trim(coalesce(p_body, '')), '');
   if cleaned is null or char_length(cleaned) > 1000 then raise exception 'bad_law'; end if;
   insert into public.group_laws (group_id, body) values (gid, cleaned) returning id into lid;
@@ -325,8 +399,7 @@ declare
   gid uuid;
   cleaned text;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   cleaned := nullif(trim(coalesce(p_body, '')), '');
   if cleaned is null or char_length(cleaned) > 1000 then raise exception 'bad_law'; end if;
   update public.group_laws set body = cleaned where id = p_law_id and group_id = gid;
@@ -345,8 +418,7 @@ declare
   gid uuid;
   old_body text;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   select body into old_body from public.group_laws where id = p_law_id and group_id = gid;
   if old_body is null then raise exception 'law_not_found'; end if;
   delete from public.group_laws where id = p_law_id and group_id = gid;
@@ -366,8 +438,7 @@ declare
   phone text;
   mid uuid;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   cleaned := nullif(trim(coalesce(p_name, '')), '');
   if cleaned is null or char_length(cleaned) > 120 then raise exception 'bad_name'; end if;
   phone := nullif(trim(coalesce(p_phone, '')), '');
@@ -397,8 +468,7 @@ declare
   was_active boolean;
   action_name text;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   cleaned := nullif(trim(coalesce(p_name, '')), '');
   if cleaned is null or char_length(cleaned) > 120 then raise exception 'bad_name'; end if;
   phone := nullif(trim(coalesce(p_phone, '')), '');
@@ -441,8 +511,7 @@ declare
   note text;
   cid uuid;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   if p_amount is null or p_amount <= 0 or p_amount > 1000000000 then raise exception 'bad_amount'; end if;
   if p_paid_on is null then raise exception 'bad_date'; end if;
   note := nullif(trim(coalesce(p_note, '')), '');
@@ -487,8 +556,7 @@ declare
   total_due bigint;
   lid uuid;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   if p_principal is null or p_principal <= 0 or p_principal > 1000000000 then raise exception 'bad_amount'; end if;
   if p_issued_on is null then raise exception 'bad_date'; end if;
   if p_interest_percent is null or p_interest_percent < 0 or p_interest_percent > 100 then
@@ -542,8 +610,7 @@ declare
   note text;
   rid uuid;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   if p_amount is null or p_amount <= 0 or p_amount > 1000000000 then raise exception 'bad_amount'; end if;
   if p_paid_on is null then raise exception 'bad_date'; end if;
   note := nullif(trim(coalesce(p_note, '')), '');
@@ -593,8 +660,7 @@ declare
   reason text;
   fid uuid;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   if p_amount is null or p_amount <= 0 or p_amount > 1000000000 then raise exception 'bad_amount'; end if;
   if p_fined_on is null then raise exception 'bad_date'; end if;
   reason := nullif(trim(coalesce(p_reason, '')), '');
@@ -643,8 +709,7 @@ declare
   rec record;
   lines jsonb := '[]'::jsonb;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
 
   started := public.cycle_start(gid);
   v_interest := public.interest_collected(gid, started);
@@ -736,8 +801,7 @@ declare
   total_payout bigint := 0;
   payout bigint;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
 
   perform 1 from public.groups where id = gid for update;
 
@@ -789,8 +853,7 @@ declare
   month_end date;
   result jsonb;
 begin
-  gid := public.current_group_id();
-  if gid is null then raise exception 'no_group'; end if;
+  gid := public.require_admin();
   if p_month is null then
     p_month := (now() at time zone 'Africa/Dar_es_Salaam')::date;
   end if;
@@ -849,35 +912,74 @@ alter table public.group_laws enable row level security;
 
 create policy groups_select on public.groups
   for select to authenticated
-  using (owner_id = auth.uid());
+  using (id = public.current_group_id());
 
 create policy members_select on public.members
   for select to authenticated
-  using (group_id = public.current_group_id());
+  using (
+    group_id = public.current_group_id()
+    and (
+      exists (select 1 from public.groups g where g.id = members.group_id and g.owner_id = auth.uid())
+      or user_id = auth.uid()
+    )
+  );
 
 create policy contributions_select on public.contributions
   for select to authenticated
-  using (group_id = public.current_group_id());
+  using (
+    group_id = public.current_group_id()
+    and (
+      exists (select 1 from public.groups g where g.id = contributions.group_id and g.owner_id = auth.uid())
+      or member_id = public.current_member_id()
+    )
+  );
 
 create policy loans_select on public.loans
   for select to authenticated
-  using (group_id = public.current_group_id());
+  using (
+    group_id = public.current_group_id()
+    and (
+      exists (select 1 from public.groups g where g.id = loans.group_id and g.owner_id = auth.uid())
+      or member_id = public.current_member_id()
+    )
+  );
 
 create policy repayments_select on public.repayments
   for select to authenticated
-  using (group_id = public.current_group_id());
+  using (
+    group_id = public.current_group_id()
+    and (
+      exists (select 1 from public.groups g where g.id = repayments.group_id and g.owner_id = auth.uid())
+      or member_id = public.current_member_id()
+    )
+  );
 
 create policy fines_select on public.fines
   for select to authenticated
-  using (group_id = public.current_group_id());
+  using (
+    group_id = public.current_group_id()
+    and (
+      exists (select 1 from public.groups g where g.id = fines.group_id and g.owner_id = auth.uid())
+      or member_id = public.current_member_id()
+    )
+  );
 
 create policy transactions_select on public.transactions
   for select to authenticated
-  using (group_id = public.current_group_id());
+  using (
+    group_id = public.current_group_id()
+    and (
+      exists (select 1 from public.groups g where g.id = transactions.group_id and g.owner_id = auth.uid())
+      or member_id = public.current_member_id()
+    )
+  );
 
 create policy activity_select on public.activity_logs
   for select to authenticated
-  using (group_id = public.current_group_id());
+  using (
+    group_id = public.current_group_id()
+    and exists (select 1 from public.groups g where g.id = activity_logs.group_id and g.owner_id = auth.uid())
+  );
 
 create policy group_laws_select on public.group_laws
   for select to authenticated
@@ -890,6 +992,10 @@ grant select on public.groups, public.members, public.contributions, public.loan
 
 revoke all on function public.current_group_id() from public, anon;
 grant execute on function public.current_group_id() to authenticated;
+revoke all on function public.require_admin() from public, anon, authenticated;
+revoke all on function public.current_member_id() from public, anon;
+grant execute on function public.current_member_id() to authenticated;
+revoke all on function public.link_member_account(uuid, text, text) from public, anon, authenticated;
 
 revoke all on function public.write_activity(uuid, text, text, uuid, text) from public, anon, authenticated;
 revoke all on function public.cycle_start(uuid) from public, anon, authenticated;
