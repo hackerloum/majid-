@@ -1,0 +1,314 @@
+import { formatTzs } from "@/lib/money";
+import type { Lang } from "@/lib/types";
+
+const sw = {
+  appName: "VICOBA",
+  login: "Ingia",
+  signup: "Jisajili",
+  email: "Barua pepe",
+  password: "Nenosiri",
+  groupName: "Jina la kikundi",
+  loginLead: "Kitabu cha kikundi cha akiba.",
+  signupLead: "Fungua kikundi kipya. Akaunti hii itaona kikundi hiki pekee.",
+  haveAccount: "Una akaunti?",
+  noAccount: "Huna akaunti?",
+  logout: "Toka",
+  back: "Rudi",
+  save: "Hifadhi",
+  pleaseWait: "Inahifadhi...",
+  add: "Ongeza",
+  edit: "Hariri",
+  close: "Funga",
+  name: "Jina",
+  phone: "Simu",
+  optional: "si lazima",
+  amount: "Kiasi (TZS)",
+  date: "Tarehe",
+  note: "Maelezo",
+  reason: "Sababu",
+  month: "Mwezi",
+  show: "Onyesha",
+  active: "Hai",
+  inactive: "Amesimamishwa",
+  deactivate: "Simamisha",
+  activate: "Washa tena",
+  members: "Wanachama",
+  contributions: "Michango",
+  loans: "Mikopo",
+  fines: "Faini",
+  shareout: "Mgawanyo",
+  reports: "Ripoti",
+  activity: "Shughuli",
+  settings: "Mipangilio",
+  activeMembers: "Wanachama hai",
+  totalContributions: "Jumla ya michango",
+  loanBalance: "Salio la mikopo",
+  totalFines: "Jumla ya faini",
+  unpaidTitle: "Hawajachanga mwezi huu",
+  unpaidMonth: "Hawajachanga",
+  allPaid: "Wote wamechangia mwezi huu.",
+  empty: "Hakuna bado.",
+  addMember: "Ongeza mwanachama",
+  recordContribution: "Rekodi mchango",
+  member: "Mwanachama",
+  giveLoan: "Toa mkopo",
+  interest: "Riba %",
+  interestAmount: "Riba",
+  totalDue: "Jumla ya kulipa",
+  principal: "Mkopo",
+  balance: "Salio",
+  paid: "Imelipwa",
+  ongoing: "Inaendelea",
+  recordRepayment: "Rekodi marejesho",
+  addFine: "Ongeza faini",
+  shareoutTitle: "Mgawanyo wa faida",
+  shareoutHelp:
+    "Faida ni riba iliyolipwa pamoja na faini za mzunguko huu. Kila mwanachama anarudishiwa michango yake, na sehemu ya faida kulingana na michango.",
+  profit: "Faida",
+  interestCollected: "Riba iliyokusanywa",
+  cycleFines: "Faini za mzunguko",
+  cycleSavings: "Michango ya mzunguko",
+  payout: "Atakayopokea",
+  profitShare: "Sehemu ya faida",
+  outstandingWarning: "Bado kuna mikopo hai ya {amount}. Hakikisha kabla ya kugawa.",
+  confirmCheck: "Nimekagua na nataka kufunga mzunguko huu.",
+  confirmShareout: "Thibitisha mgawanyo",
+  nothingToShare: "Hakuna michango ya kugawa katika mzunguko huu.",
+  groupSummary: "Muhtasari wa kikundi",
+  memberStatement: "Taarifa ya mwanachama",
+  print: "Chapisha / Pakua PDF",
+  allMembers: "Wanachama wote",
+  loansGiven: "Mikopo iliyotolewa",
+  interestSet: "Riba iliyowekwa",
+  repayments: "Marejesho",
+  owed: "Salio linalodaiwa",
+  kind: "Aina",
+  when: "Wakati",
+  settingsLead: "Akaunti hii inaona kikundi chake pekee. Unaweza kubadilisha jina wakati wowote.",
+  language: "Lugha",
+  setupTitle: "Unganisha Supabase kwanza",
+  setupBody:
+    "Weka NEXT_PUBLIC_SUPABASE_URL na NEXT_PUBLIC_SUPABASE_ANON_KEY kwenye .env.local, kisha endesha schema.sql. Maelezo yako kwenye README.",
+  contribution: "Mchango",
+  loanOut: "Mkopo",
+  repayment: "Marejesho",
+  fine: "Faini",
+  shareoutKind: "Mgawanyo",
+  open: "Fungua",
+  err_bad_amount: "Weka kiasi sahihi cha shilingi.",
+  err_bad_percent: "Riba iwe kati ya 0 na 100.",
+  err_bad_name: "Weka jina.",
+  err_bad_date: "Weka tarehe.",
+  err_member_not_found: "Mwanachama hayupo katika kikundi hiki.",
+  err_member_inactive: "Mwanachama amesimamishwa. Huwezi kumpa mkopo.",
+  err_loan_not_found: "Mkopo haupo.",
+  err_loan_closed: "Mkopo huu tayari umelipwa.",
+  err_overpay: "Kiasi kinazidi salio.",
+  err_nothing_to_share: "Hakuna cha kugawa kwa mzunguko huu.",
+  err_reason_required: "Weka sababu ya faini.",
+  err_no_group: "Kikundi hakijapatikana. Hakikisha schema.sql imeendeshwa.",
+  err_not_authenticated: "Ingia tena.",
+  err_auth: "Barua pepe au nenosiri si sahihi.",
+  err_confirm_email: "Thibitisha barua pepe kwanza, kisha ingia. Zima Confirm email kwenye Supabase ili kuingia mara moja.",
+  err_short_password: "Nenosiri liwe na herufi 6 au zaidi.",
+  err_failed: "Imeshindikana. Jaribu tena.",
+  err_missing_supabase_env: "Supabase haijaunganishwa bado.",
+  logMemberAdded: "{name} ameongezwa",
+  logMemberUpdated: "Jina limebadilishwa: {name}",
+  logMemberOff: "{name} amesimamishwa",
+  logMemberOn: "{name} amerudishwa",
+  logGroup: "Kikundi kinaitwa {name}",
+  logContribution: "{name} amechangia {amount}",
+  logLoan: "{name} amepewa mkopo {amount}. Atarejesha {total}",
+  logRepayment: "{name} amerejesha {amount}. Salio {balance}",
+  logFine: "{name} ametoziwa faini {amount}. {reason}",
+  logShareout: "Faida imegawanywa. Jumla {amount} kwa wanachama {count}",
+};
+
+const en: typeof sw = {
+  appName: "VICOBA",
+  login: "Log in",
+  signup: "Sign up",
+  email: "Email",
+  password: "Password",
+  groupName: "Group name",
+  loginLead: "The record book for a savings group.",
+  signupLead: "Open a new group. This login will see only this group.",
+  haveAccount: "Already have an account?",
+  noAccount: "No account yet?",
+  logout: "Log out",
+  back: "Back",
+  save: "Save",
+  pleaseWait: "Saving...",
+  add: "Add",
+  edit: "Edit",
+  close: "Close",
+  name: "Name",
+  phone: "Phone",
+  optional: "optional",
+  amount: "Amount (TZS)",
+  date: "Date",
+  note: "Note",
+  reason: "Reason",
+  month: "Month",
+  show: "Show",
+  active: "Active",
+  inactive: "Inactive",
+  deactivate: "Deactivate",
+  activate: "Activate again",
+  members: "Members",
+  contributions: "Contributions",
+  loans: "Loans",
+  fines: "Fines",
+  shareout: "Profit sharing",
+  reports: "Reports",
+  activity: "Activity",
+  settings: "Settings",
+  activeMembers: "Active members",
+  totalContributions: "Total contributions",
+  loanBalance: "Loans still owed",
+  totalFines: "Total fines",
+  unpaidTitle: "Have not contributed this month",
+  unpaidMonth: "Have not contributed",
+  allPaid: "Everyone has contributed this month.",
+  empty: "Nothing yet.",
+  addMember: "Add member",
+  recordContribution: "Record contribution",
+  member: "Member",
+  giveLoan: "Give loan",
+  interest: "Interest %",
+  interestAmount: "Interest",
+  totalDue: "Total to repay",
+  principal: "Loan",
+  balance: "Balance",
+  paid: "Paid",
+  ongoing: "Active",
+  recordRepayment: "Record repayment",
+  addFine: "Add fine",
+  shareoutTitle: "Profit sharing",
+  shareoutHelp:
+    "Profit is interest collected plus fines for this cycle. Each member gets their contributions back, plus a share of the profit based on what they saved.",
+  profit: "Profit",
+  interestCollected: "Interest collected",
+  cycleFines: "Fines this cycle",
+  cycleSavings: "Contributions this cycle",
+  payout: "Will receive",
+  profitShare: "Profit share",
+  outstandingWarning: "There are still active loans of {amount}. Check before sharing.",
+  confirmCheck: "I have checked and I want to close this cycle.",
+  confirmShareout: "Confirm sharing",
+  nothingToShare: "There are no contributions to share in this cycle.",
+  groupSummary: "Group summary",
+  memberStatement: "Member statement",
+  print: "Print / Save PDF",
+  allMembers: "All members",
+  loansGiven: "Loans given",
+  interestSet: "Interest charged",
+  repayments: "Repayments",
+  owed: "Still owed",
+  kind: "Type",
+  when: "When",
+  settingsLead: "This login sees only its own group. You can change the name at any time.",
+  language: "Language",
+  setupTitle: "Connect Supabase first",
+  setupBody:
+    "Put NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local, then run schema.sql. The README has the steps.",
+  contribution: "Contribution",
+  loanOut: "Loan",
+  repayment: "Repayment",
+  fine: "Fine",
+  shareoutKind: "Payout",
+  open: "Open",
+  err_bad_amount: "Enter a valid amount in shillings.",
+  err_bad_percent: "Interest must be between 0 and 100.",
+  err_bad_name: "Enter a name.",
+  err_bad_date: "Enter a date.",
+  err_member_not_found: "That member is not in this group.",
+  err_member_inactive: "This member is inactive and cannot take a loan.",
+  err_loan_not_found: "Loan not found.",
+  err_loan_closed: "This loan is already paid.",
+  err_overpay: "The amount is more than the balance.",
+  err_nothing_to_share: "There is nothing to share for this cycle.",
+  err_reason_required: "Enter a reason for the fine.",
+  err_no_group: "Group not found. Make sure schema.sql has been run.",
+  err_not_authenticated: "Please log in again.",
+  err_auth: "Email or password is not correct.",
+  err_confirm_email:
+    "Confirm the email first, then log in. Turn off Confirm email in Supabase to log in immediately.",
+  err_short_password: "Password must be at least 6 characters.",
+  err_failed: "Something went wrong. Try again.",
+  err_missing_supabase_env: "Supabase is not connected yet.",
+  logMemberAdded: "{name} was added",
+  logMemberUpdated: "Name changed: {name}",
+  logMemberOff: "{name} was deactivated",
+  logMemberOn: "{name} was activated",
+  logGroup: "Group is now called {name}",
+  logContribution: "{name} contributed {amount}",
+  logLoan: "{name} received a loan of {amount}. To repay {total}",
+  logRepayment: "{name} repaid {amount}. Balance {balance}",
+  logFine: "{name} was fined {amount}. {reason}",
+  logShareout: "Profit was shared. Total {amount} for {count} members",
+};
+
+const dict = { sw, en };
+
+export type CopyKey = keyof typeof sw;
+
+export function t(lang: Lang, key: CopyKey): string {
+  return dict[lang][key];
+}
+
+export function errorText(lang: Lang, code: string): string {
+  const key = `err_${code}` as CopyKey;
+  if (key in sw) return t(lang, key);
+  return t(lang, "err_failed");
+}
+
+function fill(template: string, values: Record<string, string>): string {
+  return Object.entries(values).reduce(
+    (text, [key, value]) => text.replaceAll(`{${key}}`, value),
+    template,
+  );
+}
+
+export function kindLabel(lang: Lang, kind: string): string {
+  if (kind === "contribution") return t(lang, "contribution");
+  if (kind === "loan_out") return t(lang, "loanOut");
+  if (kind === "repayment") return t(lang, "repayment");
+  if (kind === "fine") return t(lang, "fine");
+  if (kind === "shareout") return t(lang, "shareoutKind");
+  return kind;
+}
+
+export function activityLine(lang: Lang, action: string, summary: string): string {
+  const [first = "", second = "", third = ""] = summary.split("|");
+  if (action === "member.added") return fill(t(lang, "logMemberAdded"), { name: first });
+  if (action === "member.updated") return fill(t(lang, "logMemberUpdated"), { name: first });
+  if (action === "member.deactivated") return fill(t(lang, "logMemberOff"), { name: first });
+  if (action === "member.activated") return fill(t(lang, "logMemberOn"), { name: first });
+  if (action === "group.renamed") return fill(t(lang, "logGroup"), { name: first });
+  if (action === "contribution.recorded") {
+    return fill(t(lang, "logContribution"), { name: first, amount: formatTzs(second, lang) });
+  }
+  if (action === "loan.given") {
+    return fill(t(lang, "logLoan"), {
+      name: first,
+      amount: formatTzs(second, lang),
+      total: formatTzs(third, lang),
+    });
+  }
+  if (action === "repayment.recorded") {
+    return fill(t(lang, "logRepayment"), {
+      name: first,
+      amount: formatTzs(second, lang),
+      balance: formatTzs(third, lang),
+    });
+  }
+  if (action === "fine.added") {
+    return fill(t(lang, "logFine"), { name: first, amount: formatTzs(second, lang), reason: third });
+  }
+  if (action === "shareout.confirmed") {
+    return fill(t(lang, "logShareout"), { amount: formatTzs(first, lang), count: second });
+  }
+  return summary;
+}

@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f3efe6;
+  --ink: #1c1915;
+  --card: #fffdf8;
+  --line: #e3dacb;
+  --green: #0e6b4c;
+  --clay: #9c2f2f;
+  --muted: #6b645b;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-green: var(--green);
+  --color-clay: var(--clay);
+  --color-muted: var(--muted);
+  --font-sans: var(--font-geist-sans), "Segoe UI", sans-serif;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans), "Segoe UI", sans-serif;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
+}
