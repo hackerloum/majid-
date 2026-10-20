@@ -81,7 +81,7 @@ export async function login(_prev: ActionResult | null, formData: FormData): Pro
     password: text(formData, "password"),
   });
   if (error) return fail("auth");
-  redirect("/");
+  redirect("/home");
 }
 
 export async function signup(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -103,7 +103,7 @@ export async function signup(_prev: ActionResult | null, formData: FormData): Pr
   });
   if (error) return fail("auth");
   if (!data.session) return fail("confirm_email");
-  redirect("/");
+  redirect("/home");
 }
 
 export async function setLanguage(lang: Lang) {

@@ -25,7 +25,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
   return (
     <div className="mx-auto flex min-h-full w-full max-w-lg flex-col px-4 py-5">
       <header className="no-print mb-5 flex items-start justify-between gap-3">
-        <Link href="/" className="min-w-0">
+        <Link href="/home" className="min-w-0">
           <p className="text-xs font-bold tracking-wide text-green">{t(lang, "appName")}</p>
           <h1 className="truncate text-xl font-bold">{session.group.name}</h1>
         </Link>

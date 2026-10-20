@@ -8,7 +8,7 @@ import type { Lang } from "@/lib/types";
 export function PageIntro({ lang, title, children }: { lang: Lang; title: string; children?: ReactNode }) {
   return (
     <div className="mb-5">
-      <Link href="/" className="no-print mb-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-green">
+      <Link href="/home" className="no-print mb-3 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-green">
         <IconBack className="h-5 w-5" />
         {t(lang, "back")}
       </Link>
